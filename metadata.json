@@ -1,0 +1,5 @@
+{
+  "name": "Skillwise Inventory Manager",
+  "description": "A comprehensive product inventory management system with inline editing, CSV import/export, and history tracking.",
+  "requestFramePermissions": []
+}
