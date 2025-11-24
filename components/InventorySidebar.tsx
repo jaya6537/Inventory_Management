@@ -38,7 +38,7 @@ const InventorySidebar: React.FC<InventorySidebarProps> = ({ isOpen, onClose, pr
   }));
 
   return (
-    <div className={`fixed inset-y-0 right-0 z-40 w-full sm:w-[450px] bg-white shadow-2xl transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+    <div className={`fixed inset-y-0 right-0 z-40 w-full sm:w-[500px] bg-white shadow-2xl transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
       {product && (
         <div className="h-full flex flex-col">
           {/* Header */}
@@ -88,46 +88,51 @@ const InventorySidebar: React.FC<InventorySidebarProps> = ({ isOpen, onClose, pr
 
             <h3 className="text-sm font-medium text-gray-900 mb-4 flex items-center gap-2">
                 <Clock className="w-4 h-4 text-gray-500" />
-                Recent Activity
+                History Log
             </h3>
 
             {isLoading ? (
                <div className="flex justify-center py-8"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div></div>
             ) : (
-              <div className="space-y-0">
-                {history.length === 0 ? (
-                    <p className="text-sm text-gray-500 text-center py-4">No history available.</p>
-                ) : (
-                    history.map((log, idx) => {
-                        const isIncrease = log.newStock > log.oldStock;
-                        return (
-                            <div key={log.id} className="relative pl-6 py-4 border-l-2 border-gray-100 last:pb-0">
-                                {/* Timeline dot */}
-                                <div className={`absolute left-[-5px] top-5 w-2.5 h-2.5 rounded-full border-2 border-white ${isIncrease ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                                
-                                <div className="flex justify-between items-start">
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-900">
-                                            Stock {isIncrease ? 'increased' : 'decreased'} 
-                                            <span className="text-gray-400 mx-1">from</span>
-                                            <span className="line-through text-gray-400 text-xs">{log.oldStock}</span>
-                                            <span className="text-gray-400 mx-1">to</span>
-                                            <span className={`font-bold ${isIncrease ? 'text-green-600' : 'text-red-600'}`}>{log.newStock}</span>
-                                        </p>
-                                        <div className="flex items-center mt-1 gap-2">
-                                            <span className="text-xs text-gray-500 flex items-center gap-1 bg-gray-100 px-2 py-0.5 rounded">
-                                                <User className="w-3 h-3" /> {log.changedBy}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <span className="text-xs text-gray-400 whitespace-nowrap">
-                                        {new Date(log.timestamp).toLocaleDateString()}
-                                    </span>
+              <div className="bg-white border border-gray-100 rounded-lg overflow-hidden">
+                 <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                      <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Old</th>
+                      <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">New</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Changed By</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {history.length === 0 ? (
+                       <tr><td colSpan={4} className="px-4 py-4 text-sm text-center text-gray-500">No history found.</td></tr>
+                    ) : (
+                      history.map((log) => (
+                        <tr key={log.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-4 py-3 text-sm text-gray-600">
+                            <div className="font-medium text-gray-900">{new Date(log.timestamp).toLocaleDateString()}</div>
+                            <div className="text-xs text-gray-400">{new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-center text-gray-500">{log.oldStock}</td>
+                          <td className="px-4 py-3 text-sm text-center font-bold">
+                             <span className={log.newStock > log.oldStock ? 'text-green-600' : 'text-red-600'}>
+                               {log.newStock}
+                             </span>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600">
+                             <div className="flex items-center gap-1.5">
+                                <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-xs">
+                                    <User className="w-3 h-3 text-gray-500" />
                                 </div>
-                            </div>
-                        )
-                    })
-                )}
+                                {log.changedBy || 'Admin'}
+                             </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                 </table>
               </div>
             )}
           </div>

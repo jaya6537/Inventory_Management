@@ -5,8 +5,13 @@ import InventorySidebar from './components/InventorySidebar';
 import AddProductModal from './components/AddProductModal';
 import { Product } from './types';
 import { api } from './services/api';
+import { useToast } from './components/Toast';
+
+const ITEMS_PER_PAGE = 5;
 
 function App() {
+  const { addToast } = useToast();
+
   // App State
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -15,6 +20,9 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+
   // Selection & Modals
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -26,12 +34,14 @@ function App() {
     try {
       const data = await api.getProducts(searchQuery, categoryFilter);
       setProducts(data);
+      setCurrentPage(1); // Reset to first page on filter change
     } catch (error) {
       console.error('Failed to fetch products', error);
+      addToast('Failed to load products', 'error');
     } finally {
       setIsLoading(false);
     }
-  }, [searchQuery, categoryFilter]);
+  }, [searchQuery, categoryFilter, addToast]);
 
   // Debounce search
   useEffect(() => {
@@ -45,10 +55,10 @@ function App() {
   const handleImport = async (file: File) => {
     try {
       const res = await api.importCSV(file);
-      alert(`Import Successful!\nAdded: ${res.added}\nSkipped: ${res.skipped}\nDuplicates: ${res.duplicates.length}`);
+      addToast(`Imported ${res.added} products. ${res.skipped} duplicates skipped.`, 'success');
       fetchProducts(); // Refresh
     } catch (error) {
-      alert('Error importing file');
+      addToast('Error importing file', 'error');
     }
   };
 
@@ -61,8 +71,9 @@ function App() {
       
       // Confirm with server data
       setProducts(prev => prev.map(p => p.id === id ? updated : p));
+      addToast('Product updated successfully', 'success');
     } catch (error) {
-      alert('Failed to update product');
+      addToast('Failed to update product', 'error');
       fetchProducts(); // Revert
     }
   };
@@ -71,16 +82,19 @@ function App() {
     try {
       await api.deleteProduct(id);
       setProducts(prev => prev.filter(p => p.id !== id));
+      addToast('Product deleted', 'success');
     } catch (error) {
-      alert('Failed to delete product');
+      addToast('Failed to delete product', 'error');
     }
   };
 
   const handleCreateProduct = async (newProductData: Omit<Product, 'id'>) => {
       try {
           await api.createProduct(newProductData);
+          addToast('Product created successfully', 'success');
           fetchProducts();
       } catch (error) {
+          addToast('Failed to create product', 'error');
           throw error;
       }
   };
@@ -90,10 +104,21 @@ function App() {
     setIsHistoryOpen(true);
   };
 
+  const handleExport = () => {
+    api.exportCSV();
+    addToast('Export started', 'info');
+  };
+
   // Extract unique categories for filter
   const uniqueCategories = Array.from(new Set(products.map(p => p.category))).filter(Boolean);
 
   const selectedProduct = products.find(p => p.id === selectedProductId) || null;
+
+  // Client-side Pagination Logic
+  const indexOfLastItem = currentPage * ITEMS_PER_PAGE;
+  const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
+  const currentProducts = products.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(products.length / ITEMS_PER_PAGE);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -103,19 +128,22 @@ function App() {
         categoryFilter={categoryFilter}
         setCategoryFilter={setCategoryFilter}
         onImport={handleImport}
-        onExport={api.exportCSV}
+        onExport={handleExport}
         onAddProduct={() => setIsAddModalOpen(true)}
         categories={uniqueCategories}
       />
 
       <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-full">
           <ProductTable
-            products={products}
+            products={currentProducts}
             isLoading={isLoading}
             onUpdateProduct={handleUpdateProduct}
             onDeleteProduct={handleDeleteProduct}
             onSelectProduct={handleSelectProduct}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
           />
         </div>
       </main>

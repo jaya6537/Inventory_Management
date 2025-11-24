@@ -14,7 +14,7 @@ export interface InventoryLog {
   productId: number;
   oldStock: number;
   newStock: number;
-  changedBy: string;
+  changedBy?: string;
   timestamp: string;
 }
 
